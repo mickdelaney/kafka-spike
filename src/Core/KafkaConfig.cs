@@ -6,6 +6,6 @@ namespace Core
         public static int CommitPeriod = 5;
         
         public static string ResumeParseConsumerGroupId = "resume_parse_consumer";
-        public static string ResumeTopic = "resume_ingestion";
+        public static string ResumeTopic = "new_resumes";
     }
 }
