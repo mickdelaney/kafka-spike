@@ -1,1 +1,1 @@
-"# kafka-spike" 
+Very basic dotnet core kafka example
