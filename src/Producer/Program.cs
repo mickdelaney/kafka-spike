@@ -1,8 +1,7 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
-using Confluent.Kafka;
 using Core;
-using Newtonsoft.Json;
 
 namespace Producer
 {
@@ -10,25 +9,26 @@ namespace Producer
     {
         static async Task Main(string[] args)
         {
-            var producerConfig = new ProducerConfig { BootstrapServers = KafkaConfig.Brokers };
+            var cts = new CancellationTokenSource();
             
-            using (var producer = new ProducerBuilder<Null, string>(producerConfig).Build())
-            {
-                for (var i = 0; i < 10; i++)
-                {
-                    var id = Guid.NewGuid();
-                    
-                    var resume = new ResumeMessage { Id = id, Content = $"Resume: Index={i}. Id={id}" };
+            Console.CancelKeyPress += (_, e) => {
+                e.Cancel = true; // prevent the process from terminating.
+                cts.Cancel();
+            };
+            
+            var config = new KafkaConfig();
+                
+            Console.WriteLine($"UserProducer producing on {config.UsersTopic}. Enter user names, Ctrl+C to exit.");
 
-                    var message = new Message<Null, string> { Value = JsonConvert.SerializeObject(resume) };
-                    
-                    var result = await producer.ProduceAsync(KafkaConfig.ResumeTopic, message);
+            var userProducer = new UserProducer
+            (
+                config: config,
+                cts: cts,
+                name: "UserProducer",
+                topicName: config.UsersTopic
+            );
 
-                    Console.WriteLine($"Resume {i} sent on Partition: {result.Partition} with Offset: {result.Offset}");
-                }
-            }
-
-            Console.Read();
+            await userProducer.Produce();
         }
     }
 }

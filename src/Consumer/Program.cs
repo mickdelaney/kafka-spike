@@ -10,10 +10,11 @@ namespace Consumer
     {
         static void Main(string[] args)
         {
-            var config = new ConsumerConfig
+            var config = new KafkaConfig();
+            var consumerConfig = new ConsumerConfig
             {
-                BootstrapServers = KafkaConfig.Brokers,
-                GroupId = KafkaConfig.ResumeParseConsumerGroupId,
+                BootstrapServers = config.Brokers,
+                GroupId = config.ResumeParseConsumerGroupId,
                 EnableAutoCommit = false,
                 StatisticsIntervalMs = 5000,
                 SessionTimeoutMs = 6000,
@@ -22,7 +23,7 @@ namespace Consumer
             };
             
             // Create the consumer
-            using (var consumer = new ConsumerBuilder<Null, string>(config)
+            using (var consumer = new ConsumerBuilder<Null, string>(consumerConfig)
                 .SetErrorHandler((_, e) => Console.WriteLine($"Error: {e.Reason}"))
                 .SetStatisticsHandler((_, json) => Console.WriteLine($"Statistics: {json}"))
                 .SetPartitionsAssignedHandler((c, partitions) =>
@@ -39,7 +40,7 @@ namespace Consumer
                 })
                 .Build())
             {
-                consumer.Subscribe(new List<string> { KafkaConfig.ResumeTopic });
+                consumer.Subscribe(new List<string> { config.ResumeTopic });
 
                 while (true)
                 {
@@ -57,7 +58,7 @@ namespace Consumer
                     Console.WriteLine($"Received message at {consumeResult.TopicPartitionOffset}: {consumeResult.Value}");
                     Console.WriteLine($"Resume: {resume.Id} with Content {resume.Content}");
                     
-                    if (consumeResult.Offset % KafkaConfig.CommitPeriod == 0)
+                    if (consumeResult.Offset % config.CommitPeriod == 0)
                     {
                         // The Commit method sends a "commit offsets" request to the Kafka
                         // cluster and synchronously waits for the response. This is very

@@ -1,0 +1,11 @@
+﻿{
+    "namespace": "Elevate.Recruit",
+    "type": "record",
+    "name": "Application",
+    "fields": [
+        {"name": "id", "type": "string"},
+        {"name": "score", "type": "string"},
+        {"name": "candidate_id", "type": "string"},
+        {"name": "vacancy_is", "type": "string"}
+    ]
+}

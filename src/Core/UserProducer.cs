@@ -1,45 +1,81 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
+using Bogus;
 using Confluent.Kafka;
 using Confluent.SchemaRegistry;
 using Confluent.SchemaRegistry.Serdes;
+using Elevate.Accounts;
 
 namespace Core
 {
     public class UserProducer
     {
+        readonly KafkaConfig _config;
+        readonly CancellationTokenSource _cts;
+        readonly string _name;
+        readonly string _topicName;
+
+        public UserProducer
+        (
+            KafkaConfig config,
+            CancellationTokenSource cts,
+            string name,
+            string topicName
+        )
+        {
+            _config = config;
+            _cts = cts;
+            _name = name;
+            _topicName = topicName;
+        }
+        
         public async Task Produce()
         {
-            
-            using (var schemaRegistry = new CachedSchemaRegistryClient(schemaRegistryConfig))
+            using (var schemaRegistry = new CachedSchemaRegistryClient(new SchemaRegistryConfig { SchemaRegistryUrl = _config.SchemaRegistryUrl }))
             using (var producer = Build(schemaRegistry))
             {
-                Console.WriteLine($"{producer.Name} producing on {topicName}. Enter user names, q to exit.");
+                var testUsers = new Faker<User>()
+                    .RuleFor(u => u.id, f => Guid.NewGuid().ToString())
+                    .RuleFor(u => u.first_name, (f, u) => f.Name.FirstName())
+                    .RuleFor(u => u.last_name, (f, u) => f.Name.LastName())
+                    .RuleFor(u => u.email_name, (f, u) => f.Internet.Email(u.first_name, u.last_name));
+                    
+                var i = 0;
 
-                int i = 0;
-                
-                string text;
-                while ((text = Console.ReadLine()) != "q")
+                while (_cts.IsCancellationRequested == false)
                 {
-                    User user = new User { name = text, favorite_color = "green", favorite_number = i++ };
+                    var user = testUsers.Generate();
                     
                     await producer
-                        .ProduceAsync(topicName, new Message<string, User> { Key = text, Value = user})
-                        .ContinueWith(task => task.IsFaulted
-                            ? $"error producing message: {task.Exception.Message}"
-                            : $"produced to: {task.Result.TopicPartitionOffset}");
+                        .ProduceAsync(_topicName, new Message<string, User> { Key = i++.ToString(), Value = user})
+                        .ContinueWith(LogError);
+                  
+                    producer.Flush(TimeSpan.FromSeconds(5));
                 }
             }
-
-            
         }
 
-        static IDisposable Build(CachedSchemaRegistryClient schemaRegistry)
+        IProducer<string, User> Build(CachedSchemaRegistryClient schemaRegistry)
         {
-            return new ProducerBuilder<string, User>(producerConfig)
+            return new ProducerBuilder<string, User>(new ProducerConfig { BootstrapServers = _config.Brokers })
                 .SetKeySerializer(new AvroSerializer<string>(schemaRegistry))
                 .SetValueSerializer(new AvroSerializer<User>(schemaRegistry))
                 .Build();
+        }
+        
+        async Task LogError(Task<DeliveryResult<string, User>> task)
+        {
+            if (task.Exception == null)
+            {
+                return;
+            }
+
+            var message = task.IsFaulted
+                ? $"Producer: {_name}, error producing message: {task.Exception.Message}"
+                : $"produced to: {task.Result.TopicPartitionOffset}";
+            
+            await Console.Out.WriteLineAsync(message);
         }
     }
 }

@@ -5,11 +5,16 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="Bogus" Version="27.0.1" />
       <PackageReference Include="Confluent.Apache.Avro" Version="1.7.7.6" />
       <PackageReference Include="Confluent.Kafka" Version="1.0.0" />
       <PackageReference Include="Confluent.SchemaRegistry" Version="1.0.0" />
       <PackageReference Include="Confluent.SchemaRegistry.Serdes" Version="1.0.0" />
       <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Messages\Messages.csproj" />
     </ItemGroup>
 
 </Project>

@@ -5,10 +5,22 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="Bogus" Version="27.0.1" />
       <PackageReference Include="Confluent.Apache.Avro" Version="1.7.7.6" />
       <PackageReference Include="Confluent.Kafka" Version="1.0.0" />
       <PackageReference Include="Confluent.SchemaRegistry" Version="1.0.0" />
       <PackageReference Include="Confluent.SchemaRegistry.Serdes" Version="1.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="User.asvc" />
+      <Content Include="User.asvc">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+      <None Remove="Application.asvc" />
+      <Content Include="Application.asvc">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
 </Project>
