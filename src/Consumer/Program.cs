@@ -1,83 +1,32 @@
 ﻿using System;
-using System.Collections.Generic;
-using Confluent.Kafka;
+using System.Threading;
+using System.Threading.Tasks;
 using Core;
-using Newtonsoft.Json;
 
 namespace Consumer
 {
     class Program
     {
-        static void Main(string[] args)
-        {
-            var config = new KafkaConfig();
-            var consumerConfig = new ConsumerConfig
-            {
-                BootstrapServers = config.Brokers,
-                GroupId = config.ResumeParseConsumerGroupId,
-                EnableAutoCommit = false,
-                StatisticsIntervalMs = 5000,
-                SessionTimeoutMs = 6000,
-                AutoOffsetReset = AutoOffsetReset.Earliest,
-                EnablePartitionEof = true
-            };
+        static async Task Main(string[] args)
+        { 
+            var cts = new CancellationTokenSource();
             
-            // Create the consumer
-            using (var consumer = new ConsumerBuilder<Null, string>(consumerConfig)
-                .SetErrorHandler((_, e) => Console.WriteLine($"Error: {e.Reason}"))
-                .SetStatisticsHandler((_, json) => Console.WriteLine($"Statistics: {json}"))
-                .SetPartitionsAssignedHandler((c, partitions) =>
-                {
-                    Console.WriteLine($"Assigned partitions: [{string.Join(", ", partitions)}]");
-                    // possibly manually specify start offsets or override the partition assignment provided by
-                    // the consumer group by returning a list of topic/partition/offsets to assign to, e.g.:
-                    // 
-                    // return partitions.Select(tp => new TopicPartitionOffset(tp, externalOffsets[tp]));
-                })
-                .SetPartitionsRevokedHandler((c, partitions) =>
-                {
-                    Console.WriteLine($"Revoking assignment: [{string.Join(", ", partitions)}]");
-                })
-                .Build())
-            {
-                consumer.Subscribe(new List<string> { config.ResumeTopic });
+            Console.CancelKeyPress += (_, e) => {
+                e.Cancel = true; // prevent the process from terminating.
+                cts.Cancel();
+            };
 
-                while (true)
-                {
-                    var consumeResult = consumer.Consume();
+            var config = new KafkaConfig();
 
-                    if (consumeResult.IsPartitionEOF)
-                    {
-                        Console.WriteLine($"Reached end of topic {consumeResult.Topic}, partition {consumeResult.Partition}, offset {consumeResult.Offset}.");
-                    
-                        return;
-                    }
-                
-                    var resume = JsonConvert.DeserializeObject<ResumeMessage>(consumeResult.Value);
-                
-                    Console.WriteLine($"Received message at {consumeResult.TopicPartitionOffset}: {consumeResult.Value}");
-                    Console.WriteLine($"Resume: {resume.Id} with Content {resume.Content}");
-                    
-                    if (consumeResult.Offset % config.CommitPeriod == 0)
-                    {
-                        // The Commit method sends a "commit offsets" request to the Kafka
-                        // cluster and synchronously waits for the response. This is very
-                        // slow compared to the rate at which the consumer is capable of
-                        // consuming messages. A high performance application will typically
-                        // commit offsets relatively infrequently and be designed handle
-                        // duplicate messages in the event of failure.
-                        
-                        try
-                        {
-                            consumer.Commit(consumeResult);
-                        }
-                        catch (KafkaException e)
-                        {
-                            Console.WriteLine($"Commit error: {e.Error.Reason}");
-                        }
-                    }
-                }
-            }
+            var userConsumer = new UserConsumer
+            (
+                config: config, 
+                cts: cts, 
+                name: "UserConsumer",
+                topicName: config.UsersTopic
+            );
+
+            await userConsumer.Consume();
         }
     }
 }
