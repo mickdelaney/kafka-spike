@@ -9,14 +9,14 @@ using Elevate.Accounts;
 
 namespace Core
 {
-    public class UserConsumer
+    public class DebeziumConsumer
     {
         readonly KafkaConfig _config;
         readonly CancellationTokenSource _cts;
         readonly string _name;
         readonly string _topicName;
 
-        public UserConsumer
+        public DebeziumConsumer
         (
             KafkaConfig config,
             CancellationTokenSource cts,
@@ -46,7 +46,7 @@ namespace Core
                             {
                                 var result = consumer.Consume(_cts.Token);
 
-                                await Console.Out.WriteLineAsync($"User key name: {result.Message.Key}, user value first_name: {result.Value.first_name}");
+                                await Console.Out.WriteLineAsync($"User key name: {result.Message.Key}, user value first_name: {result.Value}");
 
                                 var offsets = consumer.Commit();
                             
@@ -65,7 +65,7 @@ namespace Core
             }
         }
 
-        IConsumer<string, User> Build(CachedSchemaRegistryClient schemaRegistry)
+        IConsumer<Ignore, string> Build(CachedSchemaRegistryClient schemaRegistry)
         {
             var consumerConfig = new ConsumerConfig
             {
@@ -78,14 +78,12 @@ namespace Core
                 EnablePartitionEof = true
             };
             
-            return new ConsumerBuilder<string, User>(consumerConfig)
-                .SetKeyDeserializer(new AvroDeserializer<string>(schemaRegistry).AsSyncOverAsync())
-                .SetValueDeserializer(new AvroDeserializer<User>(schemaRegistry).AsSyncOverAsync())
+            return new ConsumerBuilder<Ignore, string>(consumerConfig)
                 .SetErrorHandler(LogError)
                 .Build();
         }
         
-        async void LogError(IConsumer<string, User> consumer, Error error)
+        async void LogError(IConsumer<Ignore, string> consumer, Error error)
         {
             if (error == null)
             {
