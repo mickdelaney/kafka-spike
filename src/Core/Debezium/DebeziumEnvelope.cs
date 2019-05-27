@@ -2,12 +2,12 @@ using Newtonsoft.Json;
 
 namespace Core.Debezium
 {
-    public class DebeziumEnvelope
+    public class DebeziumEnvelope<T>
     {
         [JsonProperty("schema")]
         public DebeziumSchema Schema { get; set; }
         
         [JsonProperty("payload")]
-        public DebeziumPayload Payload { get; set; }
+        public DebeziumPayload<T> Payload { get; set; }
     }
 }

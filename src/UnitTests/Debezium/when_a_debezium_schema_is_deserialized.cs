@@ -1,5 +1,6 @@
 using System.IO;
 using Core.Debezium;
+using Core.Domain.Rates;
 using Newtonsoft.Json;
 using Shouldly;
 using Xunit;
@@ -19,7 +20,8 @@ namespace UnitTests.Debezium
             var stream = File.Open(pathToFile, FileMode.Open);
             var reader = new StreamReader(stream);
             var json = reader.ReadToEnd();
-            var output = JsonConvert.DeserializeObject<DebeziumEnvelope>(json);
+
+            var output = JsonConvert.DeserializeObject<DebeziumEnvelope<ApplicationRate>>(json);
             
             output.ShouldNotBeNull();
         }

@@ -2,13 +2,13 @@ using Newtonsoft.Json;
 
 namespace Core.Debezium
 {
-    public class DebeziumPayload
+    public class DebeziumPayload<T>
     {
         [JsonProperty("before")]
-        public object Before { get; set; }
+        public T Before { get; set; }
         
         [JsonProperty("after")]
-        public object After { get; set; }
+        public T After { get; set; }
 
         [JsonProperty("source")]
         public DebeziumSource Source { get; set; }

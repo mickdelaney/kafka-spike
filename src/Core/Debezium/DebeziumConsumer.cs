@@ -5,7 +5,10 @@ using Confluent.Kafka;
 using Confluent.Kafka.SyncOverAsync;
 using Confluent.SchemaRegistry;
 using Confluent.SchemaRegistry.Serdes;
+using Core.Debezium;
+using Core.Domain.Rates;
 using Elevate.Accounts;
+using Newtonsoft.Json;
 
 namespace Core
 {
@@ -46,6 +49,8 @@ namespace Core
                             {
                                 var result = consumer.Consume(_cts.Token);
 
+                                var envelope = JsonConvert.DeserializeObject<DebeziumEnvelope<ApplicationRate>>(result.Value);
+                                
                                 await Console.Out.WriteLineAsync($"User key name: {result.Message.Key}, user value first_name: {result.Value}");
 
                                 var offsets = consumer.Commit();
