@@ -5,17 +5,17 @@ using Elevate.Recruit;
 
 namespace Messages
 {
-    public class TopicSubjectSchemaCache
+    public class SubjectNameSchemaCache
     {
         readonly Dictionary<string, Schema> _subjectsToSchemas = new Dictionary<string, Schema>();
         readonly Dictionary<string, Schema> _nameToSchemas = new Dictionary<string, Schema>();
            
         public void Init(string topic)
         {
-            Add(SubjectFactory.ValueSubjectNameFrom<Application>(topic), Application._SCHEMA);
+            Add(SubjectNameFactory.ValueSubjectNameFrom<Application>(topic), Application._SCHEMA);
             Add(Application._SCHEMA);
             
-            Add(SubjectFactory.ValueSubjectNameFrom<User>(topic), User._SCHEMA);
+            Add(SubjectNameFactory.ValueSubjectNameFrom<User>(topic), User._SCHEMA);
             Add(User._SCHEMA);
         }
 
@@ -31,7 +31,7 @@ namespace Messages
         
         public Schema GetValue<T>(string topic)
         {
-            return _subjectsToSchemas[SubjectFactory.ValueSubjectNameFrom<T>(topic)];
+            return _subjectsToSchemas[SubjectNameFactory.ValueSubjectNameFrom<T>(topic)];
         }
         
         public Schema GetSchema(string name)

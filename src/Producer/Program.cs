@@ -21,7 +21,7 @@ namespace Producer
                 
             Console.WriteLine($"UserProducer producing on {config.UsersTopic}. Enter user names, Ctrl+C to exit.");
 
-            var cache = new TopicSubjectSchemaCache();
+            var cache = new SubjectNameSchemaCache();
             cache.Init(config.UsersTopic);
             
             var userProducer = new UserProducer

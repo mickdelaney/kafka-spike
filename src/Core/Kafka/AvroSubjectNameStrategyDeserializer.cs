@@ -13,7 +13,7 @@ using Schema = Avro.Schema;
 
 namespace Messages
 {
-    public class AvroTopicSubjectSchemaCacheDeserializer : IAsyncDeserializer<object>
+    public class AvroSubjectNameStrategyDeserializer : IAsyncDeserializer<object>
     {
         /// <remarks>
         ///     A datum reader cache (one corresponding to each write schema that's been seen) 
@@ -24,23 +24,18 @@ namespace Messages
         readonly SemaphoreSlim _deserializeMutex = new SemaphoreSlim(1);
 
         readonly ISchemaRegistryClient _schemaRegistryClient;
-        readonly TopicSubjectSchemaCache _cache;
+        readonly SubjectNameSchemaCache _cache;
 
-        public AvroTopicSubjectSchemaCacheDeserializer
+        public AvroSubjectNameStrategyDeserializer
         (
             ISchemaRegistryClient schemaRegistryClient, 
-            TopicSubjectSchemaCache cache
+            SubjectNameSchemaCache cache
         )
         {
             _schemaRegistryClient = schemaRegistryClient;
             _cache = cache;
         }
 
-        Schema GetReaderSchema(Schema subject)
-        {
-            return _cache.GetSchema(subject);
-        }
-     
         public async Task<object> DeserializeAsync(ReadOnlyMemory<byte> data, bool isNull, SerializationContext context)
         {
             try
@@ -78,7 +73,8 @@ namespace Messages
                             var writerSchemaJson = await _schemaRegistryClient.GetSchemaAsync(writerId).ConfigureAwait(continueOnCapturedContext: false);
                             var writerSchema = global::Avro.Schema.Parse(writerSchemaJson);
 
-                            var readerSchema = GetReaderSchema(writerSchema);
+                            // Get the ReaderSchema From The Local TopicSubjectSchemaCache
+                            var readerSchema = _cache.GetSchema(writerSchema);
                             
                             datumReader = new SpecificReader<object>(writerSchema, readerSchema);
                             

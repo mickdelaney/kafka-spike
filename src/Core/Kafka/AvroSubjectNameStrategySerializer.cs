@@ -10,23 +10,20 @@ using Confluent.SchemaRegistry.Serdes;
 
 namespace Messages
 {
-    public class AvroTopicSubjectSchemaCacheSerializer<T> : IAsyncSerializer<T>
+    public class AvroSubjectNameStrategySerializer<T> : IAsyncSerializer<T>
     {
         public const int DefaultInitialBufferSize = 1024;
 
         readonly ISchemaRegistryClient _schemaRegistryClient;
-        readonly TopicSubjectSchemaCache _cache;
 
-        SpecificSerializer<T> _serializer;
+        SubjectNameSerializer<T> _serializer;
 
-        public AvroTopicSubjectSchemaCacheSerializer
+        public AvroSubjectNameStrategySerializer
         (
-            ISchemaRegistryClient schemaRegistryClient, 
-            TopicSubjectSchemaCache cache
+            ISchemaRegistryClient schemaRegistryClient
         )
         {
             _schemaRegistryClient = schemaRegistryClient;
-            _cache = cache;
         }
 
         public async Task<byte[]> SerializeAsync(T value, SerializationContext context)
@@ -35,12 +32,11 @@ namespace Messages
             {
                 if (_serializer == null)
                 {
-                    _serializer = new SpecificSerializer<T>
+                    _serializer = new SubjectNameSerializer<T>
                     (
                         _schemaRegistryClient, 
                         true, 
-                        DefaultInitialBufferSize,
-                        _cache
+                        DefaultInitialBufferSize
                     );
                 }
 

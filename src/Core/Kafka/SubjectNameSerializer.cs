@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Avro.IO;
@@ -10,7 +11,13 @@ using Confluent.SchemaRegistry;
 
 namespace Messages
 {
-    internal class SpecificSerializer<T>
+    
+    /// <summary>
+    /// Like the Confluent SpecificSerializerImpl but using the TopicSubjectSchemaCache
+    /// to provide Subjects 
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    internal class SubjectNameSerializer<T>
     {
         readonly ISchemaRegistryClient _schemaRegistryClient;
 
@@ -26,20 +33,16 @@ namespace Messages
         readonly HashSet<string> _subjectsRegistered = new HashSet<string>();
         readonly SemaphoreSlim _serializeMutex = new SemaphoreSlim(1);
 
-        readonly TopicSubjectSchemaCache _cache;
-
-        public SpecificSerializer
+        public SubjectNameSerializer
         (
             ISchemaRegistryClient schemaRegistryClient,
             bool autoRegisterSchema,
-            int initialBufferSize, 
-            TopicSubjectSchemaCache cache
+            int initialBufferSize
         )
         {
             _schemaRegistryClient = schemaRegistryClient;
             _autoRegisterSchema = autoRegisterSchema;
             _initialBufferSize = initialBufferSize;
-            _cache = cache;
         }
 
         
@@ -47,9 +50,10 @@ namespace Messages
         {
             try
             {
+                // We need the topic name when creating the 
                 if (_writerSchema == null)
                 {
-                    _writerSchema = _cache.GetValue<T>(topic);
+                    _writerSchema = (global::Avro.Schema)typeof(T).GetField("_SCHEMA", BindingFlags.Public | BindingFlags.Static).GetValue(null);
                     _writerSchemaString = _writerSchema.ToString();    
                     _avroWriter = new SpecificWriter<T>(_writerSchema);
                 }
@@ -59,7 +63,7 @@ namespace Messages
                 
                 try
                 {
-                    var subject = isKey ? SubjectFactory.KeySubjectNameFrom<T>(topic) : SubjectFactory.ValueSubjectNameFrom<T>(topic);
+                    var subject = isKey ? SubjectNameFactory.KeySubjectNameFrom<T>(topic) : SubjectNameFactory.ValueSubjectNameFrom<T>(topic);
 
                     if (!_subjectsRegistered.Contains(subject))
                     {

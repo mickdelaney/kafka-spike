@@ -16,7 +16,7 @@ namespace Core
         readonly CancellationTokenSource _cts;
         readonly string _name;
         readonly string _topicName;
-        readonly TopicSubjectSchemaCache _cache;
+        readonly SubjectNameSchemaCache _cache;
 
         public UserProducer
         (
@@ -24,7 +24,7 @@ namespace Core
             CancellationTokenSource cts,
             string name,
             string topicName,
-            TopicSubjectSchemaCache cache
+            SubjectNameSchemaCache cache
         )
         {
             _config = config;
@@ -64,7 +64,7 @@ namespace Core
         {
             return new ProducerBuilder<string, User>(new ProducerConfig { BootstrapServers = _config.Brokers })
                 .SetKeySerializer(new AvroSerializer<string>(schemaRegistry))
-                .SetValueSerializer(new AvroTopicSubjectSchemaCacheSerializer<User>(schemaRegistry, _cache))
+                .SetValueSerializer(new AvroSubjectNameStrategySerializer<User>(schemaRegistry))
                 .Build();
         }
         

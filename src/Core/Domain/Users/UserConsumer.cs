@@ -16,7 +16,7 @@ namespace Core
         readonly CancellationTokenSource _cts;
         readonly string _name;
         readonly string _topicName;
-        readonly TopicSubjectSchemaCache _cache;
+        readonly SubjectNameSchemaCache _cache;
 
         public UserConsumer
         (
@@ -24,7 +24,7 @@ namespace Core
             CancellationTokenSource cts,
             string name,
             string topicName,
-            TopicSubjectSchemaCache cache
+            SubjectNameSchemaCache cache
         )
         {
             _config = config;
@@ -100,7 +100,7 @@ namespace Core
             
             return new ConsumerBuilder<string, object>(consumerConfig)
                 .SetKeyDeserializer(new AvroDeserializer<string>(schemaRegistry).AsSyncOverAsync())
-                .SetValueDeserializer(new AvroTopicSubjectSchemaCacheDeserializer(schemaRegistry, _cache).AsSyncOverAsync())
+                .SetValueDeserializer(new AvroSubjectNameStrategyDeserializer(schemaRegistry, _cache).AsSyncOverAsync())
                 .SetErrorHandler(LogError)
                 .Build();
         }

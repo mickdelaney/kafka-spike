@@ -1,6 +1,6 @@
 namespace Messages
 {
-    public class SubjectFactory
+    public class SubjectNameFactory
     {
         public static string KeySubjectNameFrom<T>(string topic)
         {

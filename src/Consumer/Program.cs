@@ -19,7 +19,7 @@ namespace Consumer
 
             var config = new KafkaConfig();
 
-            var cache = new TopicSubjectSchemaCache();
+            var cache = new SubjectNameSchemaCache();
             cache.Init(config.UsersTopic);
 
             var userConsumer = new UserConsumer
