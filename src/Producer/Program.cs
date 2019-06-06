@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Core;
+using Messages;
 
 namespace Producer
 {
@@ -20,12 +21,16 @@ namespace Producer
                 
             Console.WriteLine($"UserProducer producing on {config.UsersTopic}. Enter user names, Ctrl+C to exit.");
 
+            var cache = new TopicSubjectSchemaCache();
+            cache.Init(config.UsersTopic);
+            
             var userProducer = new UserProducer
             (
                 config: config,
                 cts: cts,
                 name: "UserProducer",
-                topicName: config.UsersTopic
+                topicName: config.UsersTopic,
+                cache: cache
             );
 
             await userProducer.Produce();

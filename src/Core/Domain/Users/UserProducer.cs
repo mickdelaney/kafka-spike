@@ -6,6 +6,7 @@ using Confluent.Kafka;
 using Confluent.SchemaRegistry;
 using Confluent.SchemaRegistry.Serdes;
 using Elevate.Accounts;
+using Messages;
 
 namespace Core
 {
@@ -15,19 +16,22 @@ namespace Core
         readonly CancellationTokenSource _cts;
         readonly string _name;
         readonly string _topicName;
+        readonly TopicSubjectSchemaCache _cache;
 
         public UserProducer
         (
             KafkaConfig config,
             CancellationTokenSource cts,
             string name,
-            string topicName
+            string topicName,
+            TopicSubjectSchemaCache cache
         )
         {
             _config = config;
             _cts = cts;
             _name = name;
             _topicName = topicName;
+            _cache = cache;
         }
         
         public async Task Produce()
@@ -60,7 +64,7 @@ namespace Core
         {
             return new ProducerBuilder<string, User>(new ProducerConfig { BootstrapServers = _config.Brokers })
                 .SetKeySerializer(new AvroSerializer<string>(schemaRegistry))
-                .SetValueSerializer(new AvroSerializer<User>(schemaRegistry))
+                .SetValueSerializer(new AvroTopicSubjectSchemaCacheSerializer<User>(schemaRegistry, _cache))
                 .Build();
         }
         

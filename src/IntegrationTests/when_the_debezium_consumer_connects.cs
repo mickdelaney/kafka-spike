@@ -1,35 +1,42 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Confluent.SchemaRegistry;
 using Core;
+using Messages;
+using Shouldly;
 using Xunit;
 
 namespace IntegrationTests
 {
     public class when_the_debezium_consumer_connects
     {
+        readonly KafkaConfig _kafkaConfig = new KafkaConfig();
+
+        const string TopicName = "";
+        
         [Fact]
         public async Task It_should_deserialize_the_envelope_correctly()
         {
-            var cts = new CancellationTokenSource();
-            
-            Console.CancelKeyPress += (_, e) => {
-                e.Cancel = true; // prevent the process from terminating.
-                cts.Cancel();
-            };
-
-            var config = new KafkaConfig();
-
-            var userConsumer = new DebeziumConsumer
+            var schemaRegistry = new CachedSchemaRegistryClient
             (
-                config: config, 
-                cts: cts, 
-                name: "UserConsumer",
-                topicName: "workforce.recruit.candidate_rates"
+                new SchemaRegistryConfig { SchemaRegistryUrl = _kafkaConfig.SchemaRegistryUrl }
             );
 
-            await userConsumer.Consume();
             
+            //var type = AvroMultipleDeserializer.Get(schema.Name);
+            
+            var subjects = await schemaRegistry.GetAllSubjectsAsync();
+            
+            subjects.Count.ShouldBePositive();
+
+            foreach (var subject in subjects)
+            {
+                var schemas = await schemaRegistry.GetLatestSchemaAsync(subject);
+
+                var schemaSubject = await schemaRegistry.GetSchemaAsync(1);
+                var schema = global::Avro.Schema.Parse(schemaSubject);
+            }
         }
     }
 }

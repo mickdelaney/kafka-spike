@@ -1,15 +1,16 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Core;
-using Messages;
+using Xunit;
 
-namespace Consumer
+namespace IntegrationTests
 {
-    class Program
+    public class when_the_schema_registry_is_queried
     {
-        static async Task Main(string[] args)
-        { 
+        [Fact]
+        public async Task It_should_list_all_types()
+        {
             var cts = new CancellationTokenSource();
             
             Console.CancelKeyPress += (_, e) => {
@@ -19,19 +20,16 @@ namespace Consumer
 
             var config = new KafkaConfig();
 
-            var cache = new TopicSubjectSchemaCache();
-            cache.Init(config.UsersTopic);
-
-            var userConsumer = new UserConsumer
+            var userConsumer = new DebeziumConsumer
             (
                 config: config, 
                 cts: cts, 
                 name: "UserConsumer",
-                topicName: config.UsersTopic,
-                cache: cache
+                topicName: "workforce.recruit.candidate_rates"
             );
 
             await userConsumer.Consume();
+            
         }
     }
 }

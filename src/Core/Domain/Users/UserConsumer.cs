@@ -6,6 +6,7 @@ using Confluent.Kafka.SyncOverAsync;
 using Confluent.SchemaRegistry;
 using Confluent.SchemaRegistry.Serdes;
 using Elevate.Accounts;
+using Messages;
 
 namespace Core
 {
@@ -15,19 +16,22 @@ namespace Core
         readonly CancellationTokenSource _cts;
         readonly string _name;
         readonly string _topicName;
+        readonly TopicSubjectSchemaCache _cache;
 
         public UserConsumer
         (
             KafkaConfig config,
             CancellationTokenSource cts,
             string name,
-            string topicName
+            string topicName,
+            TopicSubjectSchemaCache cache
         )
         {
             _config = config;
             _cts = cts;
             _name = name;
             _topicName = topicName;
+            _cache = cache;
         }
         
         public async Task Consume()
@@ -46,7 +50,23 @@ namespace Core
                             {
                                 var result = consumer.Consume(_cts.Token);
 
-                                await Console.Out.WriteLineAsync($"User key name: {result.Message.Key}, user value first_name: {result.Value.first_name}");
+                                switch (result.Value)
+                                {
+                                    case User u:
+                                    {
+                                        await Console.Out.WriteLineAsync($"User key name: {result.Message.Key}, user value first_name: {u.first_name}");
+                                        
+                                        break;
+                                    }
+                                    default:
+                                    {
+                                        await Console.Out.WriteLineAsync($"User key name: {result.Message.Key}, value: {result.Value}");
+                                        
+                                        break;
+                                    }
+                                }
+                                
+                                
 
                                 var offsets = consumer.Commit();
                             
@@ -65,7 +85,7 @@ namespace Core
             }
         }
 
-        IConsumer<string, User> Build(CachedSchemaRegistryClient schemaRegistry)
+        IConsumer<string, object> Build(CachedSchemaRegistryClient schemaRegistry)
         {
             var consumerConfig = new ConsumerConfig
             {
@@ -78,14 +98,14 @@ namespace Core
                 EnablePartitionEof = true
             };
             
-            return new ConsumerBuilder<string, User>(consumerConfig)
+            return new ConsumerBuilder<string, object>(consumerConfig)
                 .SetKeyDeserializer(new AvroDeserializer<string>(schemaRegistry).AsSyncOverAsync())
-                .SetValueDeserializer(new AvroDeserializer<User>(schemaRegistry).AsSyncOverAsync())
+                .SetValueDeserializer(new AvroTopicSubjectSchemaCacheDeserializer(schemaRegistry, _cache).AsSyncOverAsync())
                 .SetErrorHandler(LogError)
                 .Build();
         }
         
-        async void LogError(IConsumer<string, User> consumer, Error error)
+        async void LogError(IConsumer<string, object> consumer, Error error)
         {
             if (error == null)
             {
